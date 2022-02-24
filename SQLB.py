@@ -1,3 +1,4 @@
+from lib2to3.pgen2.token import NEWLINE
 import sys #module used to pass filename argument 
 
 dBn = [] #list to contain databases]
@@ -24,6 +25,8 @@ class Table:#table class
             self.len.append(vals.pop())
         print("Table",self.title, "created.")
         return self
+    def getAttrCount(self):
+        return len(self.attr)
 
 class DataBase:#Database class
     def __init__(self,name):
@@ -48,12 +51,45 @@ class DataBase:#Database class
     def removeTable(self,tblName):
         i = 0
         for obj in self.Tbln:
+            if self.Tbln[i].title == tblName:
+                break
+            else:
+                i = i + 1#get index of table in use
+        self.Tbln.pop(i)
+        print(len(self.obj1.attr))
+        print("Table", tblName, "deleted.")
+        
+    def selectTable(self,tblName):
+        i = 0
+        for obj in self.Tbln:
             if dBn[i].name == inUse:
                 break
             else:
                 i = i + 1#get index of table in use
-        temp = self.Tbln.pop(i)
-        print("Table", temp.title, "deleted.")
+        j = self.Tbln[i].getAttrCount()
+        for obj2 in self.Tbln[i].attr:
+            if self.Tbln[i].len[j] != 0:#if using varchar or char
+                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
+                print('(' + str(self.Tbln[i].len[j]) +')', end='')
+            else:
+                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
+            print(' | ', end='')
+            j = j + 1
+            print(j)
+        
+def processSelectKey(line):
+    line = line.replace("SELECT * FROM ",'')
+    global dBn
+    temp = line.split(';')[0]
+    i = 0
+    for obj in dBn:
+        if dBn[i].name == inUse:
+            break
+        else:
+            i = i + 1#get index of database in use
+    for tableObj in dBn[i].Tbln:
+                if tableObj.title == temp:
+                    dBn[i].selectTable(temp)        
 
 def processUseKey(line):
     line = line.replace("USE ",'')
@@ -160,6 +196,8 @@ def loadDatabase(fname):
             processDropKey(curLine)
         elif curLine.startswith("USE "):
             inUse = processUseKey(curLine)
+        elif curLine.startswith("SELECT"):
+            processSelectKey(curLine)
     dBfile.close()
 
 if len(sys.argv) < 2: #check arguments
