@@ -147,7 +147,7 @@ def processUseKey(line):
 
 def processDropKey(line): 
     line = line.replace("DROP ",'')
-    global dBn, error2, error4, inUse
+    global dBn, Tbln, error2, error4, inUse
     if line.startswith("DATABASE "):
         line = line.replace("DATABASE ", '')
         temp = line.split(';')[0]
@@ -164,7 +164,7 @@ def processDropKey(line):
         line = line.replace("TABLE ", '')
         temp = line.split(';')[0]
         i = 0
-        for obj in dBn:
+        for obj in Tbln:
             if dBn[i].name == inUse:
                 break
             else:
