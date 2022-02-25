@@ -67,10 +67,7 @@ class DataBase:
                 error3 = 0#reset
             else:
                 title = tblVals[0]
-                print(self.Tbln[0].title)
-                #self.Tbln.append()
                 self.Tbln.append(self.obj1.setTable(tblVals))#append to non-empty table list
-                print(self.Tbln[0].title)
                 print("Table", title, "created.")
 
     def removeTable(self,tblName):
@@ -87,7 +84,6 @@ class DataBase:
     def selectTable(self,tblName):
         i = 0
         for obj in self.Tbln:
-            print(self.Tbln[i].title)
             if self.Tbln[i].title == tblName:
                 break
             else:
