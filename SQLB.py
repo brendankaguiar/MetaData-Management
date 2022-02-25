@@ -68,7 +68,7 @@ class DataBase:
             else:
                 title = tblVals[0]
                 print(self.Tbln[0].title)
-                self.Tbln[1] = (Table)
+                #self.Tbln.append()
                 self.Tbln.append(self.obj1.setTable(tblVals))#append to non-empty table list
                 print(self.Tbln[0].title)
                 print("Table", title, "created.")
