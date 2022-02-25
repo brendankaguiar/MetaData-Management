@@ -2,11 +2,12 @@
 import sys #module used to pass filename argument 
 
 dBn = [] #list to contain databases]
+Tbln = []
 error1 = 0 #CREATE DATABASE error
 error2 = 0 #DROP DATABASE error
 error3 = 0 #CREATE TABLE error
 error4 = 0 #DROP TABLE error
-inUse = [] #
+inUse = [] #current database in use
 class Table:
     def __init__(self,title,len=None,attr=None,type=None):#default constructor
         if len is None:
@@ -18,13 +19,12 @@ class Table:
         self.title = title
     def setTable(self, vals):
         vals.reverse()
-        print(vals)
         self.title = vals.pop()
         while vals != []:
             self.attr.append(vals.pop())
             self.type.append(vals.pop())
             self.len.append(vals.pop())
-        return self
+        
     def unsetTable(self):
         del self.title
         i = len(self.attr) - 1
@@ -38,76 +38,77 @@ class DataBase:
     def __init__(self,name):
         self.obj1 = Table([])#Database has a Table
         self.name = name
-        self.Tbln = []
         print("Database", name, "created.")
     
     def modifyValues(self,tblVals):
+        global Tbln
         modType = tblVals.pop(1)#used for different types of modification
         if modType == "ADD":
             i = 0
-            for obj in self.Tbln:
+            for obj in Tbln:
                 title = tblVals[0]
                 if obj.title == tblVals[0]:
                     break#get index of table to modify
                 i = 1 + 1
-            self.Tbln[i] = self.obj1.setTable(tblVals)
+            Tbln[i] = self.obj1.setTable(tblVals)
             print("Table", title, "modified.")
 
     def setValues(self,tblVals):
-        global error3
-        if self.Tbln == []:
+        global error3, Tbln
+        if Tbln == []:
             title = tblVals[0]
-            self.Tbln.append(self.obj1.setTable(tblVals))#append to empty table list
+            Tbln.append(self.obj1.setTable(tblVals))#append to empty table list
             print("Table", title, "created.")
         else:
             for obj in self.Tbln:
-                tblVals.reverse()
-                if obj.title == tblVals.pop():
+                if obj.title == tblVals[0]:
                     print("!Failed to create", obj.title, "because it already exists.")
                     error3 = 1
             if error3 == 1:
                 error3 = 0#reset
             else:
                 title = tblVals[0]
-                self.Tbln.append(self.obj1.setTable(tblVals))#append to non-empty table list
+                Tbln.append(self.obj1.setTable(tblVals))#append to non-empty table list
                 print("Table", title, "created.")
 
     def removeTable(self,tblName):
         i = 0
-        for obj in self.Tbln:
-            if self.Tbln[i].title == tblName:
+        global Tbln
+        for obj in Tbln:
+            if obj.title == tblName:
                 break
             else:
                 i = i + 1#get index of table in use
-        val = len(self.Tbln)
-        self.Tbln[i].unsetTable()
-        del self.Tbln[i]
+        Tbln[i].unsetTable()
+        Tbln.pop(i)
         print("Table", tblName, "deleted.")
         
     def selectTable(self,tblName):
         i = 0
-        for obj in self.Tbln:
-            if self.Tbln[i].title == tblName:
+        global Tbln
+        for obj in Tbln:
+            if obj.title == tblName:
                 break
             else:
                 i = i + 1#get index of table in use 
         j = 0
-        while j < len(self.Tbln[i].attr):
-            if self.Tbln[i].len[j] != 0:
-                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-                print('(' + str(self.Tbln[i].len[j]) +')', end='')
+        while j < len(Tbln[i].attr):
+            if Tbln[i].len[j] != 0:
+                print(Tbln[i].attr[j], Tbln[i].type[j], end='')
+                print('(' + str(Tbln[i].len[j]) +')', end='')
             else:
-                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-            if j + 1 == len(self.Tbln[i].attr):
+                print(Tbln[i].attr[j], Tbln[i].type[j], end='')
+            if j + 1 == len(Tbln[i].attr):
                 print(' ', end='\n')
             else :
                 print(' | ', end='')
         
             j = j + 1
 def processExitKey():
-    print("All Done")
+    print("All Done.")
 
 def processAlterKey(line):
+    global dBn, inUse
     line = line.replace("ALTER TABLE ", '')
     line = line.split(";")[0]
     line = line.split(" ",-1)
@@ -124,7 +125,7 @@ def processAlterKey(line):
 
 def processSelectKey(line):
     line = line.replace("SELECT * FROM ",'')
-    global dBn
+    global dBn, inUse
     temp = line.split(';')[0]
     i = 0
     for obj in dBn:
@@ -132,9 +133,11 @@ def processSelectKey(line):
             break
         else:
             i = i + 1#get index of database in use
-    for tableObj in dBn[i].Tbln:
-                if tableObj.title == temp:
-                    dBn[i].selectTable(temp)        
+    for tableObj in dBn[0].Tbln:
+        if tableObj.title == temp:
+            dBn[i].selectTable(temp)  
+        else:
+            print("!Failed to query table", temp, "because it does not exist.")      
 
 def processUseKey(line):
     line = line.replace("USE ",'')
@@ -144,7 +147,7 @@ def processUseKey(line):
 
 def processDropKey(line): 
     line = line.replace("DROP ",'')
-    global dBn, error2, error4
+    global dBn, error2, error4, inUse
     if line.startswith("DATABASE "):
         line = line.replace("DATABASE ", '')
         temp = line.split(';')[0]
@@ -181,7 +184,7 @@ def processDropKey(line):
 
 def processCreateKey(line):
     line = line.replace("CREATE ",'')
-    global dBn, error1
+    global dBn, error1, inUse
     if line.startswith("DATABASE "):
         line = line.replace("DATABASE ", '')
         if dBn == []:
@@ -197,25 +200,37 @@ def processCreateKey(line):
             else:
                 dBn.append(DataBase(line.split(';')[0]))#append to non-empty list
     else:
+        tblVals = []
         line = line.replace("TABLE ", '')
-        line = line.split(");")[0]
-        line = line.replace('(', '')
-        line = line.replace(')', '')
-        line = line.replace(',', '')
-        line = line.split(" ",-1)
-        for obj in line:
-            if obj.find("char") != -1:
-                while obj.isalpha():
-                    print(obj)
-
-        line.append(0)
+        tblName = line.split(" (")[0]
+        line = line.split(" (")[1]
+        tblVals.append(tblName)#add title
+        escLoop = 0
+        while escLoop == 0:#iterates through each attr. until ';' found
+            if line.find(',') != -1:
+                attr = line.split(',')[0]
+                line = line.split(", ")[1]#parse line for next iteration
+            else:
+                escLoop = 1
+                attr = line.split(");")[0]
+            tblVals.append(attr.split(' ')[0]) #add attribute
+            type = attr.split(' ')[1]#parse type
+            if type.find("char") != -1:
+                tblVals.append(type.split('(')[0])#add type for varchar or char
+                type = type.split('(')[1]
+                len = type.split(')')[0]
+                tblVals.append(int(len))#add len
+            else:
+                tblVals.append(type)#add type for int or float
+                tblVals.append(0)#set len
+        #push values to table in database
         i = 0
         for obj in dBn:
             if dBn[i].name == inUse:
                 break
             else:
                 i = i + 1#get index of database in use
-        dBn[i].modifyValues(line)
+        dBn[i].setValues(tblVals)
 
 def loadDatabase(fname):
     dBfile = open(fname, "r")
@@ -233,8 +248,12 @@ def loadDatabase(fname):
             processSelectKey(curLine)
         elif curLine.startswith("ALTER"):
             processAlterKey(curLine)
-        elif curLine.startswith(".END"):
+        elif curLine.startswith(".EXIT"):
             processExitKey()
+        elif curLine.startswith('\n'):
+            continue
+        else:
+            break
     dBfile.close()
 
 if len(sys.argv) < 2: #check arguments
