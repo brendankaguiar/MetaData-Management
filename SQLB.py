@@ -6,16 +6,14 @@ error1 = 0 #CREATE DATABASE error
 error2 = 0 #DROP DATABASE error
 error3 = 0 #CREATE TABLE error
 error4 = 0 #DROP TABLE error
+error5 = 0 #SELECT TABLE error
 inUse = [] #current database in use
 class Table:
-    def __init__(self,title,len=None,attr=None,type=None):#default constructor
-        if len is None:
-            self.len = []
-        if attr is None:
-            self.attr = []#list for multiple attributes & their types
-        if type is None:
-            self.type = []
+    def __init__(self, title):#default constructor
         self.title = title
+        self.attr = []
+        self.type = []
+        self.len = []
     def setTable(self, vals):
         vals.reverse()
         self.title = vals.pop()
@@ -23,40 +21,39 @@ class Table:
             self.attr.append(vals.pop())
             self.type.append(vals.pop())
             self.len.append(vals.pop())
-        return self
-    def unsetTable(self):
-        del self.title
-        i = len(self.attr) - 1
-        while i >= 0:
-            del self.attr[i]
-            del self.len[i]
-            del self.type[i]
-            i = i - 1        
+    def modTable(self, vals):
+        vals.reverse()
+        self.title = vals.pop()
+        self.attr.append(vals.pop())
+        self.type.append(vals.pop())
+        self.len.append(vals.pop())
 
 class DataBase:
     def __init__(self,name):
-        self.obj1 = Table([])#Database has a Table
+        #self.obj1 = Table([])#Database has a Table
         self.name = name
         self.Tbln = []
         print("Database", name, "created.")
-    
+        
     def modifyValues(self,tblVals):
         modType = tblVals.pop(1)#used for different types of modification
+        title = tblVals[0]
         if modType == "ADD":
             i = 0
             for obj in self.Tbln:
-                title = tblVals[0]
                 if obj.title == tblVals[0]:
                     break#get index of table to modify
                 i = 1 + 1
-            self.Tbln[i] = self.obj1.setTable(tblVals)
+            self.Tbln[i].modTable(tblVals)
             print("Table", title, "modified.")
 
     def setValues(self,tblVals):
         global error3
         if self.Tbln == []:
             title = tblVals[0]
-            self.Tbln.append(self.obj1.setTable(tblVals))#append to empty table list
+            obj = Table(title)
+            obj.setTable(tblVals)
+            self.Tbln.append(obj)#append to empty table list
             print("Table", title, "created.")
         else:
             for obj in self.Tbln:
@@ -67,7 +64,9 @@ class DataBase:
                 error3 = 0#reset
             else:
                 title = tblVals[0]
-                self.Tbln.append(self.obj1.setTable(tblVals))#append to non-empty table list
+                obj = Table(title)
+                obj.setTable(tblVals)
+                self.Tbln.append(obj)#append to non-empty table list
                 print("Table", title, "created.")
 
     def removeTable(self,tblName):
@@ -77,7 +76,6 @@ class DataBase:
                 break
             else:
                 i = i + 1#get index of table in use
-        self.Tbln[i].unsetTable()
         del self.Tbln[i]
         print("Table", tblName, "deleted.")
         
@@ -122,7 +120,7 @@ def processAlterKey(line):
 
 def processSelectKey(line):
     line = line.replace("SELECT * FROM ",'')
-    global dBn, inUse
+    global dBn, inUse,error5
     temp = line.split(';')[0]
     i = 0
     for obj in dBn:
@@ -130,11 +128,18 @@ def processSelectKey(line):
             break
         else:
             i = i + 1#get index of database in use
-    for tableObj in dBn[0].Tbln:
+    if dBn[i].Tbln == []:
+        error5 = 1#empty database
+    for tableObj in dBn[i].Tbln:
         if tableObj.title == temp:
-            dBn[i].selectTable(temp)  
+            dBn[i].selectTable(temp)
+            error5 = 0
+            break
         else:
-            print("!Failed to query table", temp, "because it does not exist.")      
+            error5 = 1
+    if error5 == 1:
+        print("!Failed to query table", temp, "because it does not exist.")
+        error5 = 0  
 
 def processUseKey(line):
     line = line.replace("USE ",'')
