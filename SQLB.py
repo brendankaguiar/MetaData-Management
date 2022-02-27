@@ -8,29 +8,9 @@ error3 = 0 #CREATE TABLE error
 error4 = 0 #DROP TABLE error
 error5 = 0 #SELECT TABLE error
 inUse = [] #current database in use
-class Table:
-    def __init__(self, title):#default constructor
-        self.title = title
-        self.attr = []
-        self.type = []
-        self.len = []
-    def setTable(self, vals):
-        vals.reverse()
-        self.title = vals.pop()
-        while vals != []:
-            self.attr.append(vals.pop())
-            self.type.append(vals.pop())
-            self.len.append(vals.pop())
-    def modTable(self, vals):
-        vals.reverse()
-        self.title = vals.pop()
-        self.attr.append(vals.pop())
-        self.type.append(vals.pop())
-        self.len.append(vals.pop())
-
 class DataBase:
     def __init__(self,name):
-        #self.obj1 = Table([])#Database has a Table
+        #self.Table = self.Table([])#Database has a Table
         self.name = name
         self.Tbln = []
         print("Database", name, "created.")
@@ -51,7 +31,7 @@ class DataBase:
         global error3
         if self.Tbln == []:
             title = tblVals[0]
-            obj = Table(title)
+            obj = self.Table(title)
             obj.setTable(tblVals)
             self.Tbln.append(obj)#append to empty table list
             print("Table", title, "created.")
@@ -64,7 +44,7 @@ class DataBase:
                 error3 = 0#reset
             else:
                 title = tblVals[0]
-                obj = Table(title)
+                obj = self.Table(title)
                 obj.setTable(tblVals)
                 self.Tbln.append(obj)#append to non-empty table list
                 print("Table", title, "created.")
@@ -99,6 +79,27 @@ class DataBase:
                 print(' | ', end='')
         
             j = j + 1
+    class Table:
+        def __init__(self, title):#default constructor
+            self.title = title
+            self.attr = []
+            self.type = []
+            self.len = []
+        def setTable(self, vals):
+            vals.reverse()
+            self.title = vals.pop()
+            while vals != []:
+                self.attr.append(vals.pop())
+                self.type.append(vals.pop())
+                self.len.append(vals.pop())
+        def modTable(self, vals):
+            vals.reverse()
+            self.title = vals.pop()
+            self.attr.append(vals.pop())
+            self.type.append(vals.pop())
+            self.len.append(vals.pop())
+
+
 def processExitKey():
     print("All Done.")
 
