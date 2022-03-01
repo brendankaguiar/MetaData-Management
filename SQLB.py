@@ -108,7 +108,9 @@ def processAlterKey(line):
     line = line.replace("ALTER TABLE ", '')
     line = line.split(";")[0]
     line = line.split(" ",-1)
-    line.append(0)
+    if line[-1].startswith("char") != 1 and line[-1].startswith("var") != 1  :
+        line.append(0)#append 0 for 
+    print(line)
     i = 0
     for obj in dBn:
         if dBn[i].name == inUse:
@@ -234,7 +236,7 @@ def processCreateKey(line):
             else:
                 i = i + 1#get index of database in use
         dBn[i].setValues(tblVals)
-
+        
 def loadDatabase(fname):
     dBfile = open(fname, "r")
     curLine = dBfile.readline()
