@@ -105,7 +105,16 @@ def processExitKey():
 
 def processAlterKey(line):
     global dBn, inUse
-    line = line.replace("ALTER TABLE ", '')
+    tblVals = []
+    line = line.replace("insert into ", '')
+    tblName = line.split("(")[0]
+    tblVals.append(tblName.split(" ")[0])
+    vals = line.split("(")[1]
+    vals = vals.split(");")[0]
+    #vals = vals.split(",", -1)
+    print(vals)
+    tblVals.append(tblName)#add title
+    print(tblVals)
     line = line.split(";")[0]
     line = line.split(" ",-1)
     if line[-1].startswith("char") != 1 and line[-1].startswith("var") != 1  :
@@ -251,7 +260,7 @@ def loadDatabase(fname):
             inUse = processUseKey(curLine)
         elif curLine.startswith("SELECT"):
             processSelectKey(curLine)
-        elif curLine.startswith("ALTER"):
+        elif curLine.startswith("insert into"):
             processAlterKey(curLine)
         elif curLine.startswith(".EXIT"):
             processExitKey()
