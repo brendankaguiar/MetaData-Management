@@ -25,7 +25,15 @@ class DataBase:
             i = i + 1
         self.Tbln[i].addTableData(tblVals)
         print("1 new record inserted.")
-
+    def modifyTableData(self,tblVals):
+        tblVals.reverse()
+        i = 0
+        for obj in self.Tbln:
+            if self.Tbln[i].title == tblVals.pop():
+                break
+            else:
+                i = i + 1#get index of table in use
+        self.Tbln[i].modTableData(tblVals)
     def modifyTableSchema(self,tblVals):#not used in PA2
         i = 0
         for obj in self.Tbln:
@@ -112,15 +120,39 @@ class DataBase:
                 self.attr.append(vals.pop())
                 self.type.append(vals.pop())
                 self.len.append(vals.pop())
-        def modTableSchema(self, vals):#currently supports add schema only/ not used in PA2
+        def modTableSchema(self, vals):#currently supports add schema only, not used in PA2
             vals.reverse()
             self.title = vals.pop()
             self.attr.append(vals.pop())
             self.type.append(vals.pop())
             self.len.append(vals.pop())
-
+        def modTableData(self, Data):
+            print(Data)
+            i = 0#index for attribute to change
+            for obj in self.attr:
+                if Data[-1] == obj:
+                    Data.pop()
+                    break#get index of attribute in use
+                else:
+                    i = i + 1
+            print(i)
+            print(self.values[0])
+            j = 0#index for number of records modified
+            for obj in self.values[0]:
+                if obj == Data[0]:#data to change found
+                    
+                    k = self.values[j].index(obj)#assign index of new attribute data
+                    self.values[j][k] = Data[1]
+                    j = j + 1
+            if j == 0 or j > 1:
+                print(j, "records modified.")
+            else:
+                print(j, "record modified.")          
         def addTableData(self, vals):
             i = 0
+            print(vals)
+            print(self.attr)
+            print(self.type)
             for obj in vals:
                 if obj.find(".") > -1:#finds floats
                     self.values[0].append(obj)#add attribute
@@ -152,8 +184,27 @@ def getIndexOfDatabase():#helper function
 def processExitKey():
     print("All Done.")
 
+def processUpdateKey(line):
+    tblVals = []
+    global dBn
+    line = line.split(';')[0]
+    line = line.split('\n')
+    line[0] = line[0].replace("update ",'')
+    tblVals.append(line[0].split(' ')[0])#add table name
+    line[1] = line[1].replace("set ", '')
+    tblVals.append(line[1].split(' ')[0])#add attribute schema to modify
+    line[1] = line[1].split(' ')[2]#parse attribute data to modify
+    tblVals.append(line[1].replace("'",''))#remove single quotes and append data
+    line[2] = line[2].replace("where ", '')
+    line[2] = line[2].replace("where " + tblVals[1] + " = ",'')#parse new attribute data
+    tblVals.append(line[2].split(' ')[0])#parse attribute schema that is conditioned upon
+    line[2]= line[2].replace("'", '')
+    tblVals.append(line[2].split(' ')[2])#parse attribute data that is conditioned upon
+    i = getIndexOfDatabase()
+    dBn[i].modifyTableData(tblVals)
+
 def processInsertKey(line):
-    global dBn, inUse
+    global dBn
     tblVals = []
     line = line.replace("insert into ", '')
     tblName = line.split("(")[0]
@@ -262,10 +313,13 @@ def loadDatabase(fname):
             processCreateKey(curLine)
         elif curLine.startswith("USE"):
             inUse = processUseKey(curLine)
-        elif curLine.startswith("select"):
+        elif curLine.startswith("select") or curLine.startswith("SELECT"):
             processSelectKey(curLine)
         elif curLine.startswith("insert into"):
             processInsertKey(curLine)
+        elif curLine.startswith("update"):
+            curLine = curLine + dBfile.readline() + dBfile.readline()
+            processUpdateKey(curLine)
         elif curLine.startswith(".EXIT"):
             processExitKey()
         elif curLine.startswith('\n'):
