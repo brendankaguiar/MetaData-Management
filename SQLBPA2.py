@@ -107,14 +107,15 @@ class DataBase:
             i = len(self.attr)#get attribute count
             j = 1#new line tracking iterator
             for obj in self.values[0]:
+                key = list(obj.keys())
                 if j < i:
-                    print(obj + '|', end='')
+                    print(key.pop() + '|', end='')
                     j = j + 1
                 else:
-                    print(obj)
+                    print(key.pop())
                     j = 1#reset iterator for next line
         def setTableSchema(self, vals):
-            vals.reverse()
+            vals.reverse()  
             self.title = vals.pop()
             while vals != []:
                 self.attr.append(vals.pop())
@@ -150,26 +151,14 @@ class DataBase:
                 print(j, "record modified.")          
         def addTableData(self, vals):
             i = 0
-            print(vals)
-            print(self.attr)
-            print(self.type)
             for obj in vals:
-                if obj.find(".") > -1:#finds floats
-                    self.values[0].append(obj)#add attribute
-                    self.values[1].append("float")#add cleartype
-                    self.values[2].append(0)#add attribute len
-                elif obj.isdigit():#finds int
-                    self.values[0].append(obj)
-                    self.values[1].append("int")
-                    self.values[2].append(0)
-                elif obj.find("var"):#finds varchar
-                    self.values[0].append(obj)
-                    self.values[1].append("varchar")
-                    self.values[2].append(len(obj))
-                else:#finds char
-                    self.values[0].append(obj)
-                    self.values[1].append("char")
-                    self.values[2].append(self.len[i])
+                self.values[0].append({obj : self.attr[i]})#append attribute map
+                self.values[1].append({obj : self.type[i]})#append type map
+
+                if self.type[i].find("char") != -1:
+                    self.values[2].append({obj : len(obj)})#append len map
+                else:
+                    self.values[2].append({obj : 0})#append len map
                 i = i + 1
 
 def getIndexOfDatabase():#helper function
