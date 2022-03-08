@@ -1,3 +1,4 @@
+from asyncio import DatagramTransport
 import sys #module used to pass filename argument 
 import re #regular expression module to match desired chars
 dBn = [] #list to contain databases]
@@ -50,7 +51,6 @@ class DataBase:
             obj.setTableSchema(tblVals)
             self.Tbln.append(obj)#append to empty table list
             print("Table", title, "created.")
-            #print(self.Tbln[0].attr)
         else:
             for obj in self.Tbln:
                 if obj.title == tblVals[0]:
@@ -102,18 +102,20 @@ class DataBase:
             self.attr = []
             self.type = []
             self.len = []
-            self.values = [[],[],[]]#list of attr, type, and len
+            self.values = [[],[],[]]#list for [0]attr, [1]type, and [2]len
         def selectTableData(self):
+            #print(self.values[0])
             i = len(self.attr)#get attribute count
             j = 1#new line tracking iterator
             for obj in self.values[0]:
-                key = list(obj.keys())
-                if j < i:
-                    print(key.pop() + '|', end='')
-                    j = j + 1
-                else:
-                    print(key.pop())
-                    j = 1#reset iterator for next line
+                for vals in obj:
+                    key = list(vals.keys())
+                    if j < i:
+                        print(key.pop() + '|', end='')
+                        j = j + 1
+                    else:
+                        print(key.pop())
+                        j = 1#reset iterator for next line
         def setTableSchema(self, vals):
             vals.reverse()  
             self.title = vals.pop()
@@ -127,39 +129,43 @@ class DataBase:
             self.attr.append(vals.pop())
             self.type.append(vals.pop())
             self.len.append(vals.pop())
-        def modTableData(self, Data):
-            print(Data)
-            i = 0#index for attribute to change
-            for obj in self.attr:
-                if Data[-1] == obj:
-                    Data.pop()
-                    break#get index of attribute in use
-                else:
-                    i = i + 1
-            print(i)
-            print(self.values[0])
-            j = 0#index for number of records modified
+        def modTableData(self, Data):#[dataCond, schemaCond, newData, schema]
+            #print(Data)
+            #print(self.values[0])
+            i = 0#index for attribute data
+            recordIndices = []#index for attribute schema
             for obj in self.values[0]:
-                if obj == Data[0]:#data to change found
-                    
-                    k = self.values[j].index(obj)#assign index of new attribute data
-                    self.values[j][k] = Data[1]
-                    j = j + 1
+                for vals in obj:
+                    if vals == {Data[0] : Data[1]}:
+                        recordIndices.append(i)
+                i = i + 1
+            j = 0#counter for records
+            for indices in recordIndices:
+                for vals in self.values[0][indices]:
+                    if list(vals.values())[0] == Data[3]:
+                        #print("working")
+                        l = self.attr.index(Data[3])#get index of schema to change
+                        self.values[0][indices][l] = {Data[2] : Data[3]}
+                        j = j + 1
+                        #set attribute data
             if j == 0 or j > 1:
                 print(j, "records modified.")
             else:
                 print(j, "record modified.")          
         def addTableData(self, vals):
-            i = 0
+            i = 0#attribute counter
+            AttrData = []
+            TypeData = []
+            LenData = []
             for obj in vals:
-                self.values[0].append({obj : self.attr[i]})#append attribute map
-                self.values[1].append({obj : self.type[i]})#append type map
-
-                if self.type[i].find("char") != -1:
-                    self.values[2].append({obj : len(obj)})#append len map
-                else:
-                    self.values[2].append({obj : 0})#append len map
+                AttrData.append({obj : self.attr[i]})
+                TypeData.append({self.type[i] : self.attr[i]})
+                LenData.append({self.len[i] : self.attr[i]})
                 i = i + 1
+            self.values[0].append(AttrData)
+            self.values[1].append(TypeData)
+            self.values[2].append(LenData)
+            
 
 def getIndexOfDatabase():#helper function
     i = 0
