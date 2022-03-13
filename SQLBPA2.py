@@ -15,32 +15,29 @@ class DataBase:
         self.Tbln = []
         print("Database", name, "created.")
 
+    def getIndexofTable(self, target):#helper function to get table to use
+        i = 0
+        for obj in self.Tbln:
+            if obj.title == target:
+                break#get index of table
+            i = i + 1
+        return i
+
     def insertTableData(self,tblVals):
         tblVals.reverse()
         title = tblVals.pop()#remove title
         tblVals.reverse()
-        i = 0
-        for obj in self.Tbln:
-            if obj.title == title:
-                break#get index of table to modify
-            i = i + 1
+        i = self.getIndexofTable(title)
         self.Tbln[i].addTableData(tblVals)
         print("1 new record inserted.")
+
     def modifyTableData(self,tblVals):
         tblVals.reverse()
-        i = 0
-        for obj in self.Tbln:
-            if self.Tbln[i].title == tblVals.pop():
-                break
-            else:
-                i = i + 1#get index of table in use
+        i = self.getIndexofTable(tblVals.pop())
         self.Tbln[i].modTableData(tblVals)
+
     def modifyTableSchema(self,tblVals):#not used in PA2
-        i = 0
-        for obj in self.Tbln:
-            if obj.title == tblVals[0]:
-                break#get index of table to modify
-            i = i + 1
+        i = self.getIndexofTable(tblVals[0])
         self.Tbln[i].modTableSchema(tblVals)
 
     def insertTableSchema(self,tblVals):
@@ -66,22 +63,12 @@ class DataBase:
                 print("Table", title, "created.")
 
     def removeTable(self,tblName):#not used in PA2
-        i = 0
-        for obj in self.Tbln:
-            if self.Tbln[i].title == tblName:
-                break
-            else:
-                i = i + 1#get index of table in use
+        i = self.getIndexofTable(tblName)
         del self.Tbln[i]
         print("Table", tblName, "deleted.")
         
     def selectTableSchema(self,tblName):
-        i = 0
-        for obj in self.Tbln:
-            if self.Tbln[i].title == tblName:
-                break
-            else:
-                i = i + 1#get index of table in use 
+        i = self.getIndexofTable(tblName)
         j = 0
         while j < len(self.Tbln[i].attr):
             if self.Tbln[i].len[j] != 0:
@@ -93,9 +80,15 @@ class DataBase:
                 print(' ', end='\n')
             else :
                 print(' | ', end='')
-        
             j = j + 1
         self.Tbln[i].selectTableData()
+    def deleteTableData(self, tblVals):
+        tblVals.reverse()
+        title = tblVals.pop()#remove title
+        tblVals.reverse()
+        i = self.getIndexofTable(title)
+        self.Tbln[i].delTableData(tblVals)
+
     class Table:
         def __init__(self, title):#default constructor
             self.title = title
@@ -103,8 +96,9 @@ class DataBase:
             self.type = []
             self.len = []
             self.values = [[],[],[]]#list for [0]attr, [1]type, and [2]len
+        def delTableData(slef,tblVals):
+            print(tblVals)
         def selectTableData(self):
-            #print(self.values[0])
             i = len(self.attr)#get attribute count
             j = 1#new line tracking iterator
             for obj in self.values[0]:
@@ -130,8 +124,6 @@ class DataBase:
             self.type.append(vals.pop())
             self.len.append(vals.pop())
         def modTableData(self, Data):#[dataCond, schemaCond, newData, schema]
-            #print(Data)
-            #print(self.values[0])
             i = 0#index for attribute data
             recordIndices = []#index for attribute schema
             for obj in self.values[0]:
@@ -165,7 +157,7 @@ class DataBase:
             self.values[0].append(AttrData)
             self.values[1].append(TypeData)
             self.values[2].append(LenData)
-            
+               
 
 def getIndexOfDatabase():#helper function
     i = 0
@@ -178,6 +170,23 @@ def getIndexOfDatabase():#helper function
     return i
 def processExitKey():
     print("All Done.")
+
+def processDeleteKey(line):
+    tblVals = []
+    global dBn
+    line = line.replace("delete from ",'')
+    tblVals.append(line.split('\n')[0])#append table name
+    line = line.split('\n')
+    line[1] = line[1].replace("where ", '')
+    tblVals.append(line[1].split(' ')[0])#append attribute schema condition
+    tblVals.append(line[1].split(' ')[1])#append operator condition
+    line[1] = line[1].split(' ')[2]
+    tblVals.append(line[1].split(';')[0])#append data condition
+    i = getIndexOfDatabase()
+    tblVals[0] = tblVals[0].strip(' ')#remove space
+    tblVals[0] = tblVals[0].capitalize()
+    tblVals[3] = tblVals[3].strip("'")#remove single quotes    
+    dBn[i].deleteTableData(tblVals)
 
 def processUpdateKey(line):
     tblVals = []
@@ -213,6 +222,7 @@ def processInsertKey(line):
         attr = attr.replace("'","")#remove any single quotes
         tblVals.append(attr)
     i = getIndexOfDatabase()
+    print(tblVals)
     dBn[i].insertTableData(tblVals)
 
 def processSelectKey(line):
@@ -315,6 +325,9 @@ def loadDatabase(fname):
         elif curLine.startswith("update"):
             curLine = curLine + dBfile.readline() + dBfile.readline()
             processUpdateKey(curLine)
+        elif curLine.startswith("delete from "):
+            curLine = curLine + dBfile.readline() + dBfile.readline()
+            processDeleteKey(curLine)
         elif curLine.startswith(".EXIT"):
             processExitKey()
         elif curLine.startswith('\n'):
@@ -323,7 +336,9 @@ def loadDatabase(fname):
             break
     dBfile.close()
 
+#main program
 if len(sys.argv) < 2: #check arguments
-     print("calling function")#no argument
+     print("SQLB:", end=' ')#no file
+     #working on input looping function
 else:
     loadDatabase(sys.argv[1])#load sql file
