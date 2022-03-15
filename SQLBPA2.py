@@ -8,9 +8,9 @@ error3 = 0 #CREATE TABLE error
 error4 = 0 #DROP TABLE error
 error5 = 0 #SELECT TABLE error
 inUse = [] #current database in use
+
 class DataBase:
     def __init__(self,name):
-        #self.Table = self.Table([])#Database has a Table
         self.name = name
         self.Tbln = []
         print("Database", name, "created.")
@@ -67,21 +67,28 @@ class DataBase:
         del self.Tbln[i]
         print("Table", tblName, "deleted.")
         
-    def selectTableSchema(self,tblName):
-        i = self.getIndexofTable(tblName)
+    def selectTableSchema(self,tblVals):
+        i = self.getIndexofTable(tblVals[0])
         j = 0
-        while j < len(self.Tbln[i].attr):
-            if self.Tbln[i].len[j] != 0:
-                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-                print('(' + str(self.Tbln[i].len[j]) +')', end='')
-            else:
-                print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-            if j + 1 == len(self.Tbln[i].attr):
-                print(' ', end='\n')
-            else :
-                print(' | ', end='')
-            j = j + 1
-        self.Tbln[i].selectTableData()
+        if len(tblVals) < 2:
+            tblVals.append(self.Tbln[i].attr)#append all attributes schema to show
+        for attr in tblVals[1]:#show attribute schema
+            while j < len(self.Tbln[i].attr):
+                if self.Tbln[i].attr[j] == attr.replace(' ',''):
+                    if self.Tbln[i].len[j] != 0:
+                        print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
+                        print('(' + str(self.Tbln[i].len[j]) +')', end='')
+                    else:
+                        print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
+                    if j + 1 == len(self.Tbln[i].attr):
+                        print(' ', end='\n')
+                    else :
+                        print(' | ', end='')
+                j = j + 1
+            j = 0
+        tblVals.pop(0)#remove table name from values
+        self.Tbln[i].selectTableData(tblVals)
+
     def deleteTableData(self, tblVals):
         tblVals.reverse()
         title = tblVals.pop()#remove title
@@ -96,20 +103,68 @@ class DataBase:
             self.type = []
             self.len = []
             self.values = [[],[],[]]#list for [0]attr, [1]type, and [2]len
-        def delTableData(slef,tblVals):
-            print(tblVals)
-        def selectTableData(self):
-            i = len(self.attr)#get attribute count
-            j = 1#new line tracking iterator
+        def delTableData(self,tblVals):
+            recordIndices = []
+            i = 0#index for data in list to delete
+            for lst in self.values[0]:
+                for obj in lst:
+                    if list(obj.values())[0] == tblVals[0]:#find attribute schema condition 
+                        if tblVals[1] == '=':#find operator condition
+                            if list(obj.keys())[0] == tblVals[2]:#find attribute data condition
+                                recordIndices.append(i)#append record to delete
+                        elif tblVals[1] == '>':
+                            if tblVals[2].isnumeric():#check for numeric comparison
+                                data = int(float(list(obj.keys())[0]) * 100)#make value comparable
+                                data2 = int(tblVals[2]) * 100
+                                if data > data2:#find attribute data condition
+                                    recordIndices.append(i)#append record to delete
+                i = i + 1
+            recordIndices.reverse()
+            k = 0#delete count
+            for j in recordIndices:
+                del self.values[0][j]#delete attribute data
+                del self.values[1][j]#type data
+                del self.values[2][j]#length data
+                k = k + 1
+            if k == 1:
+                print(k, "record deleted.")
+            else:
+                print(k, "records deleted.")
+        def selectTableData(self, tblVals):
+            #print(tblVals)
+            k = 0#index to clean up attribute schema
+            for vals in tblVals[0]:
+                tblVals[0][k] = vals.replace(' ','')#clean up schema
+                k = k + 1
+            i = len(tblVals[0])#get attribute count
+            j = 1#index for newline tracking
             for obj in self.values[0]:
-                for vals in obj:
-                    key = list(vals.keys())
-                    if j < i:
-                        print(key.pop() + '|', end='')
-                        j = j + 1
-                    else:
-                        print(key.pop())
-                        j = 1#reset iterator for next line
+                for dictionary in obj:#dictionary of {data : schema}
+                    if len(tblVals) > 1 and list(dictionary.values())[0] == tblVals[1][0]:#find matching schema condition
+                        if tblVals[1][1]== "!=": #find matching operator
+                            if tblVals[1][2] != list(dictionary.keys())[0]:
+                                for dictionary2 in obj:#grab self.values for new search
+                                    if list(dictionary2.values())[0] in tblVals[0]:#find data for schema in use
+                                        key = list(dictionary2.keys())                
+                                        if j < i:
+                                            print(key.pop() + '|', end='')
+                                            j = j + 1
+                                        else:
+                                            print(key.pop())
+                                            j = 1#reset iterator for next line
+            if len(tblVals) == 1:#print data for select *
+                i = len(self.attr)#get attribute count
+                j = 1#new line tracking iterator
+                for obj in self.values[0]:
+                    for vals in obj:
+                        key = list(vals.keys())
+                        if j < i:
+                            print(key.pop() + '|', end='')
+                            j = j + 1
+                        else:
+                            print(key.pop())
+                            j = 1#reset iterator for next line
+                                        
         def setTableSchema(self, vals):
             vals.reverse()  
             self.title = vals.pop()
@@ -156,8 +211,7 @@ class DataBase:
                 i = i + 1
             self.values[0].append(AttrData)
             self.values[1].append(TypeData)
-            self.values[2].append(LenData)
-               
+            self.values[2].append(LenData)          
 
 def getIndexOfDatabase():#helper function
     i = 0
@@ -222,26 +276,36 @@ def processInsertKey(line):
         attr = attr.replace("'","")#remove any single quotes
         tblVals.append(attr)
     i = getIndexOfDatabase()
-    print(tblVals)
     dBn[i].insertTableData(tblVals)
 
 def processSelectKey(line):
-    line = line.replace("SELECT * FROM ",'')
-    line = line.replace("select * from ",'')
     global dBn, error5
-    temp = line.split(';')[0]
+    tblVals = []
+    if line.split(" ")[1] == '*':
+        line = line.replace("SELECT * FROM ",'')
+        line = line.replace("select * from ",'')
+        tblVals.append(line.split(';')[0])#add table name
+    else:
+        line = line.split(';')[0]
+        line = line.split('\n')
+        name = line[1].replace("from ",'').capitalize()
+        tblVals.append(str(name.replace(' ', '')))#append table name
+        line[0] = line[0].replace("select ",'')
+        tblVals.append(line[0].split(','))#append attribute schema to show
+        line[2] = line[2].replace("where ", '')
+        tblVals.append(line[2].split(" "))#append condition data
     i = getIndexOfDatabase()
     if dBn[i].Tbln == []:
         error5 = 1#empty database
     for tableObj in dBn[i].Tbln:
-        if tableObj.title == temp:
-            dBn[i].selectTableSchema(temp)
+        if tableObj.title == tblVals[0]:
+            dBn[i].selectTableSchema(tblVals)
             error5 = 0
             break
         else:
             error5 = 1
     if error5 == 1:
-        print("!Failed to query table", temp, "because it does not exist.")
+        print("!Failed to query table", tblVals[0], "because it does not exist.")
         error5 = 0  
 
 def processUseKey(line):
@@ -319,6 +383,8 @@ def loadDatabase(fname):
         elif curLine.startswith("USE"):
             inUse = processUseKey(curLine)
         elif curLine.startswith("select") or curLine.startswith("SELECT"):
+            if curLine.split(" ")[1] != '*':
+                curLine = curLine + dBfile.readline() + dBfile.readline()
             processSelectKey(curLine)
         elif curLine.startswith("insert into"):
             processInsertKey(curLine)
@@ -328,7 +394,7 @@ def loadDatabase(fname):
         elif curLine.startswith("delete from "):
             curLine = curLine + dBfile.readline() + dBfile.readline()
             processDeleteKey(curLine)
-        elif curLine.startswith(".EXIT"):
+        elif curLine.startswith(".EXIT") or curLine.startswith(".exit"):
             processExitKey()
         elif curLine.startswith('\n'):
             continue
