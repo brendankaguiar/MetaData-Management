@@ -1,6 +1,7 @@
 from asyncio import DatagramTransport
 import sys #module used to pass filename argument 
 import re #regular expression module to match desired chars
+import os #used to make directory for database
 dBn = [] #list to contain databases]
 error1 = 0 #CREATE DATABASE error
 error2 = 0 #DROP DATABASE error
@@ -215,15 +216,35 @@ class DataBase:
 
 def getIndexOfDatabase():#helper function
     i = 0
-    global inUse
+    global inUse, dBn
     for obj in dBn:
         if dBn[i].name == inUse:
             break
         else:
             i = i + 1#get index of database in use
     return i
+
 def processExitKey():
-    print("All Done.")
+    global dBn
+    for obj in dBn:
+        os.mkdir(obj.name)#make directory
+        for tables in obj.Tbln:
+            schema = '|'
+            for dictionary in tables.values[0][0]:#write attribute schema
+                schema = schema + list(dictionary.values())[0] + '|'
+            tblFile = open(obj.name + '/' + tables.title + ".txt", "w")
+            tblFile.write(schema + '\n')#write schema
+            i = 1#index to prevent extra newline print
+            for tableData in tables.values[0]:#write attribute data
+                data = '|'
+                for dictionary in tableData:
+                    data = data + list(dictionary.keys())[0] + '|'
+                if i < len(tables.values[0]):
+                    tblFile.write(data + '\n')#write data
+                else:
+                    tblFile.write(data) 
+                i = i + 1   
+    print("All done.")    
 
 def processDeleteKey(line):
     tblVals = []
