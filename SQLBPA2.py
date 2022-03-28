@@ -1,7 +1,7 @@
 from asyncio import DatagramTransport
 import sys #module used to pass filename argument 
 import re #regular expression module to match desired chars
-import os #used to make directory for database
+import os #used to make directory for databases
 dBn = [] #list to contain databases]
 error1 = 0 #CREATE DATABASE error
 error2 = 0 #DROP DATABASE error
@@ -425,7 +425,8 @@ def loadDatabase(fname):
 
 #main program
 if len(sys.argv) < 2: #check arguments
-     print("SQLB:", end=' ')#no file
+     print("SQLB: ", end='')#no file
+
      #working on input looping function
 else:
     loadDatabase(sys.argv[1])#load sql file
