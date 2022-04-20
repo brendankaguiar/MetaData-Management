@@ -1,6 +1,7 @@
 import sys #module used to pass filename argument 
-import re #regular expression module for mulitple cases of string matching
-#import os #used to make directory for databases
+import os #used to make directory for databases
+import re
+from tracemalloc import start #regular expression module for mulitple cases of string matching
 dBn = [] #list to contain databases]
 error1 = 0 #CREATE DATABASE error
 error2 = 0 #DROP DATABASE error
@@ -54,27 +55,31 @@ class DataBase:
                 print("Table", title, "created.")
     
     def selectTableSchema(self,tblVals):
-        i = self.getIndexofTable(tblVals[0])
+        #[select values, join type, L. Table Var, L. Table name, R. Table Var, R. Table name, table1 col, table2 col, cond., R. tuples]
+        i = self.getIndexofTable(tblVals[3])#left table index
+        r = self.getIndexofTable(tblVals[5])#right table index
+        schema = []
+        if tblVals[0] == '*':
+            schema.append(self.Tbln[i].attr)#append all attributes schema to show
+            schema[-1] = schema[-1] + self.Tbln[r].attr
+            schema.append(self.Tbln[i].type)#append all types schema to show
+            schema[-1] = schema[-1] + self.Tbln[r].type
+            schema.append(self.Tbln[i].len)#append all types schema to show
+            schema[-1] = schema[-1] + self.Tbln[r].len
         j = 0
-        if len(tblVals) < 2:
-            tblVals.append(self.Tbln[i].attr)#append all attributes schema to show
-        for attr in tblVals[1]:#show attribute schema
-            while j < len(self.Tbln[i].attr):
-                if self.Tbln[i].attr[j] == attr.replace(' ',''):
-                    if self.Tbln[i].len[j] != 0:
-                        print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-                        print('(' + str(self.Tbln[i].len[j]) +')', end='')
-                    else:
-                        print(self.Tbln[i].attr[j], self.Tbln[i].type[j], end='')
-                    if j + 1 == len(self.Tbln[i].attr):
-                        print(' ', end='\n')
-                    else :
-                        print(' | ', end='')
-                j = j + 1
-            j = 0
+        for attr in schema[0]:#show attribute schema
+            if schema[2][j] != 0:
+                print(attr, schema[1][j], end='')
+                print('(' + schema[2][j] + ')', end='')
+            else:
+                print(attr,  schema[1][j], end='')
+            if j + 1 == len(schema[0]):
+                print(' ', end='\n')
+            else:
+                print('|', end='')
+            j = j + 1
         tblVals.pop(0)#remove table name from tuples
         self.Tbln[i].selectTableRecord(tblVals)
-
     class Table:
         def __init__(self, title):#default constructor
             self.title = title
@@ -84,39 +89,41 @@ class DataBase:
             self.tuples = [[],[],[]]#list for [0]attr, [1]type, and [2]len
 
         def selectTableRecord(self, tblVals):
-            k = 0#index to clean up attribute schema
-            for vals in tblVals[0]:
-                tblVals[0][k] = vals.replace(' ','')#clean up schema
-                k = k + 1
-            i = len(tblVals[0])#get attribute count
-            j = 1#index for newline tracking
-            for obj in self.tuples[0]:
-                for dictionary in obj:#dictionary of {data : schema}
-                    if len(tblVals) > 1 and list(dictionary.values())[0] == tblVals[1][0]:#find matching schema condition
-                        if tblVals[1][1]== "!=": #find matching operator
-                            if tblVals[1][2] != list(dictionary.keys())[0]:
-                                for dictionary2 in obj:#grab self.tuples for new search
-                                    if list(dictionary2.values())[0] in tblVals[0]:#find data for schema in use
-                                        key = list(dictionary2.keys())                
-                                        if j < i:
-                                            print(key.pop() + '|', end='')
-                                            j = j + 1
-                                        else:
-                                            print(key.pop())
-                                            j = 1#reset iterator for next line
-            if len(tblVals) == 1:#print data for select *
-                i = len(self.attr)#get attribute count
-                j = 1#new line tracking iterator
-                for obj in self.tuples[0]:
-                    for vals in obj:
-                        key = list(vals.keys())
-                        if j < i:
-                            print(key.pop() + '|', end='')
-                            j = j + 1
-                        else:
-                            print(key.pop())
-                            j = 1#reset iterator for next line
-                                        
+            tblRef = ""
+            for tuplesL in self.tuples[0]:
+                for dict in tuplesL:
+                    if list(dict.values())[0] == tblVals[5]:#find schema to match for Left tuple
+                        schemaL = list(dict.keys())[0]#schema data to match
+                for tuplesR in tblVals[8][0]:
+                    for dict in tuplesR:
+                        if list(dict.values())[0] == tblVals[6]:#find matching schema for Right Tuple
+                            if list(dict.keys())[0] == schemaL:#find matching data
+                                i = len(list(tuplesR))
+                                
+                                for dict2 in tuplesL:
+                                    print(list(dict2.keys())[0]+ '|', end='')
+                                    tblRef = list(dict2.keys())[0]#get reference for start of next selection
+
+
+                                for dict3 in tuplesR:
+                                    if i > 1:
+                                        print(list(dict3.keys())[0] + '|', end='')
+                                        i = i - 1
+                                    else:
+                                        print(list(dict3.keys())[0])
+            if tblVals[0] == "left outer join":
+                start_found = 0
+                for val in self.tuples[0]:
+                    i = len(val)
+                    for dict in val:
+                        if start_found == 1:
+                            print(list(dict.keys())[0]+ '|', end='')
+                            i = i - 1
+                        elif tblRef == list(dict.keys())[0]:
+                            start_found = 1  
+                    if i == 0:
+                        print("|")        
+
         def setTableSchema(self, vals):
             vals.reverse()  
             self.title = vals.pop()
@@ -149,6 +156,27 @@ def getIndexOfDatabase():#helper function
             i = i + 1#get index of database in use
     return i
 
+def processExitKey():
+    global dBn
+    for obj in dBn:
+        os.mkdir(obj.name)#make directory
+        for tables in obj.Tbln:
+            schema = '|'
+            for dictionary in tables.tuples[0][0]:#write attribute schema
+                schema = schema + list(dictionary.values())[0] + '|'
+            tblFile = open(obj.name + '/' + tables.title + ".txt", "w")
+            tblFile.write(schema + '\n')#write schema
+            i = 1#index to prevent extra newline print
+            for tableData in tables.tuples[0]:#write attribute data
+                data = '|'
+                for dictionary in tableData:
+                    data = data + list(dictionary.keys())[0] + '|'
+                if i < len(tables.tuples[0]):
+                    tblFile.write(data + '\n')#write data
+                else:
+                    tblFile.write(data) 
+                i = i + 1   
+    print("All done.") 
 
 def processCreateKey(line):
     line = line.replace(re.findall(r'create ',line, flags=re.IGNORECASE)[0],'')#return matching string and remove
@@ -171,11 +199,15 @@ def processCreateKey(line):
         tblVals = []
         line = line.replace(re.findall(r'table ',line, flags=re.IGNORECASE)[0], '')
         tblVals.append(line.split("(")[0])#append table name
+        varLength = []
+        if line.find("varchar") > 0:
+            varLength = re.findall(r'-?\d+\.?\d*', line)#get length of varchar
         line = line.split("(")[1]
         line = line.split(");")[0]
         line = line.split(",")#append items to list
+        
         for obj in line:
-            if re.findall('[0-9]+', obj) == []:#if int or float
+            if obj.find('int') > 0:#if int or float
                 obj = obj.split(' ')
                 if len(obj) == 3:
                     obj.remove('')
@@ -184,26 +216,24 @@ def processCreateKey(line):
                 tblVals.append(obj.pop())#add type
                 tblVals.append(0)#add len
             else:
-                if obj.find("var"):
+                if obj.find('var') > 0:#print if varchar
                     obj = obj.split(' ')
                     obj.reverse()
                     if len(obj) == 3:
                         obj.remove('')
                     tblVals.append(obj.pop())#add attribute
                     tblVals.append("varchar")#add type
-                    length = re.findall('[0-9]+', obj.pop())
-                    tblVals.append(length.pop())#add len
-                else:    
+                    tblVals.append(varLength.pop())#add len
+                else:#print if char  
                     obj = obj.split(' ')
                     obj.reverse()
                     obj = obj.split(' ')
                     obj.reverse()
                     if len(obj) == 3:
                         obj.remove('')
-                    length = re.findall('[0-9]+', obj)
                     tblVals.append(obj.pop())#add attribute
                     tblVals.append("char")#add type
-                    tblVals.append(length.pop())#add len
+                    tblVals.append(0)#add len
         i = getIndexOfDatabase()
         dBn[i].insertTableSchema(tblVals)
     
@@ -232,7 +262,8 @@ def processInsertKey(line):
 
 def processSelectKey(line):
     global dBn, error5
-    tblVals = []
+    tblVals = []#list values commented below
+#[select values, join type, L. Table Var, L. Table name, R. Table Var, R. Table name, table1 col, table2 col, cond., R tuples]
     line = line.split("\n")
     if line[0].endswith("* "):#select all
         tblVals.append('*')#add projection
@@ -241,7 +272,7 @@ def processSelectKey(line):
     elif line[1].find("left outer join") > 0:
         tblVals.append("left outer join")
     else:
-        tblVals.append("natural join")
+        tblVals.append("inner join")
     tblVars = line[1].split(' ')
     tblVars[2] = tblVars[2].replace(',', '')
     tblVals.append(tblVars[2])#append table variable name
@@ -251,35 +282,20 @@ def processSelectKey(line):
     tblVals.append(tblVars.pop())#append tabl name
     schemaVars = line[2].split(' ')
     tblVals.append(schemaVars[1].split(".")[1])#add table1 col.
-    tblVals.append(schemaVars[3].split(".")[1])#add table2 col.
+    schemaVars[3] = schemaVars[3].split(".")[1]#get column
+    tblVals.append(schemaVars[3].split(";")[0])#add table2 col. removing ';'
     tblVals.append(schemaVars[2])#add condition operator
-    print(tblVals)
     i = getIndexOfDatabase()
     if dBn[i].Tbln == []:
         error5 = 1#empty database
-    join1, join2
+    sourceR = []#right tuples source
     for tableObj in dBn[i].Tbln:
-        if tableObj.title == tblVals[3]:
-            join1 = tableObj.tuples
-        elif tableObj.title == tblVals[5]:
-            join2 = tableObj.tuples
-    #begin selecting join types showing data. 0 down, 3 to go
-    """
-        tblVals.append(line.split(';')[0])#add table name
-    else:
-        line = line.split(';')[0]
-        line = line.split('\n')
-        name = line[1].replace("from ",'').capitalize()
-        tblVals.append(str(name.replace(' ', '')))#append table name
-        line[0] = line[0].replace("select ",'')
-        tblVals.append(line[0].split(','))#append attribute schema to show
-        line[2] = line[2].replace("where ", '')
-        tblVals.append(line[2].split(" "))#append condition data
-    i = getIndexOfDatabase()
-    if dBn[i].Tbln == []:
-        error5 = 1#empty database
+        if tableObj.title == tblVals[5]:#search for right table
+            sourceR = tableObj.tuples
+            break
+    tblVals.append(sourceR)#append right table
     for tableObj in dBn[i].Tbln:
-        if tableObj.title == tblVals[0]:
+        if tableObj.title == tblVals[3]:#search for left table
             dBn[i].selectTableSchema(tblVals)
             error5 = 0
             break
@@ -288,8 +304,9 @@ def processSelectKey(line):
     if error5 == 1:
         print("!Failed to query table", tblVals[0], "because it does not exist.")
         error5 = 0  
+    #begin selecting join types showing data. 0 down, 3 to go
 
-"""
+ 
 def parselines(curLine):
     global inUse
     if re.findall(r'create',curLine, flags=re.IGNORECASE):#ignores case sensitivity
@@ -298,11 +315,11 @@ def parselines(curLine):
         inUse = processUseKey(curLine)
     elif curLine.startswith("insert into"):
         processInsertKey(curLine)
-    elif re.findall(r'select',curLine, flags=re.IGNORECASE):
+    elif re.findall(r'select', curLine, flags=re.IGNORECASE):
         processSelectKey(curLine)
-    elif re.findall(r'.exit',curLine, flags=re.IGNORECASE):
-        #processExitKey()
-        print(curLine)
+    elif re.findall(r'.exit', curLine, flags=re.IGNORECASE):
+        processExitKey()
+
 def loadDatabase(fname):
     dBfile = open(fname, "r")
     commands = dBfile.readlines()
@@ -327,7 +344,6 @@ def loadDatabase(fname):
 #main program
 if len(sys.argv) < 2: #check arguments
      print("SQLB: ", end='')#no file
-
-     #working on input looping function
+     #needs input looping function
 else:
     loadDatabase(sys.argv[1])#load sql file
